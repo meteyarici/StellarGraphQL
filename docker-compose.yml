@@ -14,7 +14,7 @@ services:
     depends_on:
       - db
       - redis
-      - elasticsearch
+      - meilisearch
 
   nginx:
     build:
@@ -52,14 +52,15 @@ services:
     networks:
       - shop-network
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
-    container_name: shop-es
+  meilisearch:
+    image: getmeili/meilisearch:v1.2
+    container_name: shop-meilisearch
     environment:
-      - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      MEILI_NO_ANALYTICS: "true"
     ports:
-      - "9200:9200"
+      - "7700:7700"
+    volumes:
+      - meili_data:/data.ms
     networks:
       - shop-network
 
@@ -69,3 +70,4 @@ networks:
 
 volumes:
   pgdata:
+  meili_data:

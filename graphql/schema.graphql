@@ -1,41 +1,68 @@
-"A datetime string with format `Y-m-d H:i:s`, e.g. `2018-05-23 13:43:32`."
-scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
-
-"Indicates what fields are available at the top level of a query operation."
 type Query {
-    "Find a single user by an identifying attribute."
-    user(
-      "Search by primary key."
-      id: ID @eq @rules(apply: ["prohibits:email", "required_without:email"])
 
-      "Search by email address."
-      email: String @eq @rules(apply: ["prohibits:id", "required_without:id", "email"])
-    ): User @find
+  # Meilisearch arama
+  searchProducts(
+    query: String!
+    brand: String
+    minPrice: Float
+    maxPrice: Float
+    inStock: Boolean
+    page: Int = 1
+    perPage: Int = 20
+  ): ProductPagination!
+    @field(resolver: "App\\GraphQL\\Queries\\ProductQuery@search")
 
-    "List multiple users."
-    users(
-      "Filters by name. Accepts SQL LIKE wildcards `%` and `_`."
-      name: String @where(operator: "like")
-    ): [User!]! @paginate(defaultCount: 10)
+  # Normal listeleme (DB’den)
+  products(
+    page: Int = 1
+    perPage: Int = 20
+  ): ProductPaginator!
+    @field(resolver: "App\\GraphQL\\Queries\\ProductQuery@products")
 }
 
-"Account of a person who uses this application."
-type User {
-    "Unique primary key."
-    id: ID!
+"""
+Normal DB pagination için tip (products)
+"""
+type ProductPaginator {
+  data: [Product!]!
+  paginatorInfo: PaginatorInfo!
+}
 
-    "Non-unique name."
-    name: String!
+"""
+Meilisearch arama için tip (searchProducts)
+"""
+type ProductPagination {
+  data: [Product!]!
+  current_page: Int!
+  last_page: Int!
+  total: Int!
+}
 
-    "Unique email address."
-    email: String!
+"""
+Global paginator info
+"""
+type PaginatorInfo {
+  count: Int!
+  currentPage: Int!
+  firstItem: Int
+  hasMorePages: Boolean!
+  lastItem: Int
+  lastPage: Int!
+  perPage: Int!
+  total: Int!
+}
 
-    "When the email was verified."
-    email_verified_at: DateTime
-
-    "When the account was created."
-    created_at: DateTime!
-
-    "When the account was last updated."
-    updated_at: DateTime!
+"""
+Product Model
+"""
+type Product {
+  id: ID!
+  uuid: String
+  title: String!
+  slug: String
+  sku: String
+  brand: String
+  price: Float!
+  stock: Int!
+  is_active: Boolean!
 }
