@@ -18,6 +18,37 @@ type Query {
     perPage: Int = 20
   ): ProductPaginator!
     @field(resolver: "App\\GraphQL\\Queries\\ProductQuery@products")
+
+  # Kullanıcılar listeleme ve arama
+  searchUsers(
+    query: String!
+    email: String
+    page: Int = 1
+    perPage: Int = 20
+  ): UserPagination!
+    @field(resolver: "App\\GraphQL\\Queries\\UserQuery@search")
+
+  users(
+    page: Int = 1
+    perPage: Int = 20
+  ): UserPaginator!
+    @field(resolver: "App\\GraphQL\\Queries\\UserQuery@list")
+
+  # Adresler listeleme ve arama
+  searchAddresses(
+    query: String!
+    city: String
+    country: String
+    page: Int = 1
+    perPage: Int = 20
+  ): AddressPagination!
+    @field(resolver: "App\\GraphQL\\Queries\\AddressQuery@search")
+
+  addresses(
+    page: Int = 1
+    perPage: Int = 20
+  ): AddressPaginator!
+    @field(resolver: "App\\GraphQL\\Queries\\AddressQuery@list")
 }
 
 """
@@ -64,5 +95,53 @@ type Product {
   brand: String
   price: Float!
   stock: Int!
+  is_active: Boolean!
+}
+
+"""
+User pagination ve tipleri
+"""
+type UserPaginator {
+  data: [User!]!
+  paginatorInfo: PaginatorInfo!
+}
+
+type UserPagination {
+  data: [User!]!
+  current_page: Int!
+  last_page: Int!
+  total: Int!
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  username: String
+  is_active: Boolean!
+}
+
+"""
+Address pagination ve tipleri
+"""
+type AddressPaginator {
+  data: [Address!]!
+  paginatorInfo: PaginatorInfo!
+}
+
+type AddressPagination {
+  data: [Address!]!
+  current_page: Int!
+  last_page: Int!
+  total: Int!
+}
+
+type Address {
+  id: ID!
+  user_id: ID!
+  street: String!
+  city: String!
+  country: String!
+  postal_code: String
   is_active: Boolean!
 }

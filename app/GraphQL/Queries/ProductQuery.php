@@ -9,7 +9,7 @@ class ProductQuery
     /**
      * Meilisearch üzerinden arama
      */
-    public function search($_, array $args)
+    public function search($root, array $args)
     {
         $query = $args['query'] ?? '';
         $brand = $args['brand'] ?? null;
@@ -19,39 +19,38 @@ class ProductQuery
         $page = $args['page'] ?? 1;
         $perPage = $args['perPage'] ?? 20;
 
-        // Meilisearch arama
+        // Scout Builder
         $builder = Product::search($query);
 
-        // Meilisearch filtre dizisi
-        $filters = [];
-
+        // Filtreleri ayrı ayrı ekliyoruz
         if ($brand) {
-            $filters[] = "brand = \"$brand\"";
+            $builder->where('brand', $brand);
         }
 
         if ($minPrice !== null) {
-            $filters[] = "price >= $minPrice";
+            $builder->where('price', '>=', $minPrice);
         }
 
         if ($maxPrice !== null) {
-            $filters[] = "price <= $maxPrice";
+            $builder->where('price', '<=', $maxPrice);
         }
 
         if ($inStock !== null) {
-            $filters[] = $inStock ? "stock > 0" : "stock = 0";
+            if ($inStock) {
+                $builder->where('stock', 1); // 1 veya 0 kullan, >0 Scout ile çalışmaz
+            } else {
+                $builder->where('stock', 0);
+            }
         }
 
-        if (!empty($filters)) {
-            $builder->where(implode(' AND ', $filters));
-        }
-
-        $result = $builder->paginate($perPage, 'page', $page);
+        // Scout paginate
+        $results = $builder->paginate($perPage, 'page', $page);
 
         return [
-            'data' => $result->items(),
-            'current_page' => $result->currentPage(),
-            'last_page' => $result->lastPage(),
-            'total' => $result->total(),
+            'data' => $results->items(),
+            'current_page' => $results->currentPage(),
+            'last_page' => $results->lastPage(),
+            'total' => $results->total(),
         ];
     }
 
