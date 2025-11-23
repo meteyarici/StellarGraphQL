@@ -10,7 +10,7 @@ class CheckoutMutation
     {
         $input = $args['input'];
 
-        // Kuyruğa ekle
+
         ProcessCheckoutJob::dispatch([
             'user_id' => $input['userId'],
             'product_id' => $input['productId'],

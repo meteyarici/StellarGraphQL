@@ -19,14 +19,14 @@ class ProductQuery
         $page = $args['page'] ?? 1;
         $perPage = $args['perPage'] ?? 20;
 
-        // Scout Builder
+ 
         $builder = Product::search($query);
 
-        // Filtreleri ayrı ayrı ekliyoruz
         if ($brand) {
             $builder->where('brand', $brand);
         }
-
+        //TODO:add extra filters
+        /*
         if ($minPrice !== null) {
             $builder->where('price', '>=', $minPrice);
         }
@@ -36,14 +36,11 @@ class ProductQuery
         }
 
         if ($inStock !== null) {
-            if ($inStock) {
-                $builder->where('stock', 1); // 1 veya 0 kullan, >0 Scout ile çalışmaz
-            } else {
-                $builder->where('stock', 0);
-            }
+            $builder->where('stock', $inStock ? 1 : 0); // Scout ile >0 çalışmayabilir, bu yüzden 1 veya 0
         }
+        */
 
-        // Scout paginate
+        // Paginate ile sonuç
         $results = $builder->paginate($perPage, 'page', $page);
 
         return [
@@ -53,6 +50,7 @@ class ProductQuery
             'total' => $results->total(),
         ];
     }
+
 
     /**
      * Normal pagination (GraphQL products sorgusu için)

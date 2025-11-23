@@ -147,15 +147,29 @@ type Address {
 }
 
 type Mutation {
-  buyProduct(
-    productId: ID!
-    quantity: Int = 1
-    paymentMethodId: ID!
-  ): PurchaseResult! @field(resolver: "App\\GraphQL\\Mutations\\PurchaseMutation@buy")
+    buyProduct(
+        idempotencyKey: String!
+        productId: ID!
+        quantity: Int = 1
+        paymentMethodId: ID!
+    ): PurchaseResult! @field(resolver: "App\\GraphQL\\Mutations\\PurchaseMutation@buy")
 }
 
 type PurchaseResult {
   success: Boolean!
   message: String!
   orderId: ID
+}
+
+type Mutation {
+    login(email: String!, password: String!): AuthPayload!
+    @field(resolver: "App\\GraphQL\\Mutations\\AuthMutation@login")
+}
+
+type AuthPayload {
+    access_token: String
+    refresh_token: String
+    token_type: String
+    expires_in: Int
+    user: User
 }

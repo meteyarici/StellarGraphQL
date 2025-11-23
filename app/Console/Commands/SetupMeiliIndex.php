@@ -29,7 +29,7 @@ class SetupMeiliIndex extends Command
             $client->createIndex($indexName);
             $this->info("Index '$indexName' oluşturuldu.");
         }
-        
+
         $client->index($indexName)->updateFilterableAttributes([
             'brand',
             'price',
