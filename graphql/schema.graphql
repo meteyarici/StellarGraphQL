@@ -1,0 +1,193 @@
+type Query {
+
+  # Meilisearch arama
+  searchProducts(
+    query: String!
+    brand: String
+    minPrice: Float
+    maxPrice: Float
+    inStock: Boolean
+    page: Int = 1
+    perPage: Int = 20
+  ): ProductPagination!
+    @field(resolver: "App\\GraphQL\\Queries\\ProductQuery@search")
+
+  # Normal listeleme (DB’den)
+  products(
+    page: Int = 1
+    perPage: Int = 20
+  ): ProductPaginator!
+    @field(resolver: "App\\GraphQL\\Queries\\ProductQuery@products")
+
+  # Kullanıcılar listeleme ve arama
+  searchUsers(
+    query: String!
+    email: String
+    page: Int = 1
+    perPage: Int = 20
+  ): UserPagination!
+    @field(resolver: "App\\GraphQL\\Queries\\UserQuery@search")
+
+  users(
+    page: Int = 1
+    perPage: Int = 20
+  ): UserPaginator!
+    @field(resolver: "App\\GraphQL\\Queries\\UserQuery@list")
+
+  # Adresler listeleme ve arama
+  searchAddresses(
+    query: String!
+    city: String
+    country: String
+    page: Int = 1
+    perPage: Int = 20
+  ): AddressPagination!
+    @field(resolver: "App\\GraphQL\\Queries\\AddressQuery@search")
+
+  addresses(
+    page: Int = 1
+    perPage: Int = 20
+  ): AddressPaginator!
+    @field(resolver: "App\\GraphQL\\Queries\\AddressQuery@list")
+}
+
+"""
+Normal DB pagination için tip (products)
+"""
+type ProductPaginator {
+  data: [Product!]!
+  paginatorInfo: PaginatorInfo!
+}
+
+"""
+Meilisearch arama için tip (searchProducts)
+"""
+type ProductPagination {
+  data: [Product!]!
+  current_page: Int!
+  last_page: Int!
+  total: Int!
+}
+
+"""
+Global paginator info
+"""
+type PaginatorInfo {
+  count: Int!
+  currentPage: Int!
+  firstItem: Int
+  hasMorePages: Boolean!
+  lastItem: Int
+  lastPage: Int!
+  perPage: Int!
+  total: Int!
+}
+
+"""
+Product Model
+"""
+type Product {
+  id: ID!
+  uuid: String
+  title: String!
+  slug: String
+  sku: String
+  brand: String
+  price: Float!
+  stock: Int!
+  is_active: Boolean!
+}
+
+"""
+User pagination ve tipleri
+"""
+type UserPaginator {
+  data: [User!]!
+  paginatorInfo: PaginatorInfo!
+}
+
+type UserPagination {
+  data: [User!]!
+  current_page: Int!
+  last_page: Int!
+  total: Int!
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  username: String
+  is_active: Boolean!
+}
+
+"""
+Address pagination ve tipleri
+"""
+type AddressPaginator {
+  data: [Address!]!
+  paginatorInfo: PaginatorInfo!
+}
+
+type AddressPagination {
+  data: [Address!]!
+  current_page: Int!
+  last_page: Int!
+  total: Int!
+}
+
+type Address {
+  id: ID!
+  user_id: ID!
+  street: String!
+  city: String!
+  country: String!
+  postal_code: String
+  is_active: Boolean!
+}
+
+extend type Mutation {
+    buyProduct(
+        idempotencyKey: String!
+        productId: ID!
+        quantity: Int = 1
+        paymentMethodId: ID!
+    ): PurchaseResult! @field(resolver: "App\\GraphQL\\Mutations\\PurchaseMutation@buy")
+}
+
+type PurchaseResult {
+  success: Boolean!
+  message: String!
+  orderId: ID
+}
+
+extend type Mutation {
+    login(email: String!, password: String!): AuthPayload!
+    @field(resolver: "App\\GraphQL\\Mutations\\AuthMutation@login") @guard
+}
+
+type AuthPayload {
+    access_token: String
+    refresh_token: String
+    token_type: String
+    expires_in: Int
+    user: User
+}
+
+type UserProfile {
+    id: ID!
+    name: String
+    email: String
+    phone: String
+    birth_date: String
+    address: String
+}
+
+
+extend type Query {
+    me: User  @field(resolver: "App\\GraphQL\\Mutations\\AuthMutation@me") @guard
+
+
+}
+
+
