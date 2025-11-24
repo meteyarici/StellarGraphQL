@@ -13,17 +13,23 @@ class PurchaseMutation extends BaseMutation
 {
     public function buy($root, array $args, $context)
     {
+
         $user = $context->user();
         $productId = $args['productId'];
         $quantity = $args['quantity'] ?? 1;
         $idempotencyKey = $args['idempotencyKey'];
+        $redisKey = "idemp:buy:$idempotencyKey";
 
-        $redis = Redis::connection();
-        $idempKey = "idemp:buy:$idempotencyKey";
+        if ($this->redis->exists($redisKey)) {
 
+            return [
+                'success' => false,
+                'message' => 'Duplicate request detected',
+                'orderId' => null
+            ];
+        } else {
 
-        if ($redis->exists($idempKey)) {
-            return json_decode($redis->get($idempKey), true);
+            $this->redis->setex($redisKey, 60, 1);
         }
 
         DB::beginTransaction();
@@ -39,9 +45,8 @@ class PurchaseMutation extends BaseMutation
                 ];
             }
 
-
             $softReserveKey = "soft_reserve:product:$productId";
-            $reservedQty = $redis->get($softReserveKey) ?? 0;
+            $reservedQty = $this->redis->get($softReserveKey) ?? 0;
 
             if ($reservedQty + $quantity > $product->stock) {
                 return [
@@ -51,9 +56,9 @@ class PurchaseMutation extends BaseMutation
                 ];
             }
 
-            $redis->incrby($softReserveKey, $quantity);
+            $this->redis->incrby($softReserveKey, $quantity);
             // reservation süresi (örn. 5 dakika)
-            $redis->expire($softReserveKey, 300);
+            $this->redis->expire($softReserveKey, 300);
 
             // order oluştur (status: pending)
             $order = Order::create([
@@ -66,14 +71,16 @@ class PurchaseMutation extends BaseMutation
                 'total_amount'     => 1,
             ]);
 
-            // ödeme kuyruğuna ekle
-            $redis->xadd('payments_stream', '*', [
+            $paymentData = [
                 'order_id' => $order->id,
-                'user_id' => $user->id,
-                'product_id' => $productId,
-                'quantity' => $quantity,
-                'idempotency_key' => $idempotencyKey,
-            ]);
+                'user_id'  => $user->id,
+                'amount'   => $order->total_price,
+                'currency' => 'USD', // ya da product currency
+                'payment_method_id' => $args['paymentMethodId'],
+                'timestamp'=> now()->timestamp,
+            ];
+
+            $this->redis->lpush('payment_queue', json_encode($paymentData));
 
             // Idempotency sonucu kaydet
             $response = [
@@ -82,7 +89,7 @@ class PurchaseMutation extends BaseMutation
                 'orderId' => $order->id,
             ];
 
-            $redis->setex($idempKey, 60, json_encode($response));
+            //$this->redis->setex($idempKey, 60, json_encode($response));
             DB::commit();
 
             return $response;
