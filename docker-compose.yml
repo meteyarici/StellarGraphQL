@@ -14,7 +14,7 @@ services:
     depends_on:
       - db
       - redis
-      - meilisearch
+      - typesense
 
   nginx:
     build:
@@ -52,15 +52,17 @@ services:
     networks:
       - shop-network
 
-  meilisearch:
-    image: getmeili/meilisearch:v1.2
-    container_name: shop-meilisearch
+  typesense:
+    image: typesense/typesense:0.24.0
+    container_name: shop-typesense
     environment:
-      MEILI_NO_ANALYTICS: "true"
+      TYPESENSE_DATA_DIR: /data
+      TYPESENSE_API_KEY: xyz
+      TYPESENSE_LISTEN_PORT: 8108
     ports:
-      - "7700:7700"
+      - "8108:8108"
     volumes:
-      - meili_data:/data.ms
+      - typesense_data:/data
     networks:
       - shop-network
 
@@ -70,4 +72,4 @@ networks:
 
 volumes:
   pgdata:
-  meili_data:
+  typesense_data:

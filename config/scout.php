@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Product;
+
 return [
 
     /*
@@ -84,10 +86,35 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'meilisearch' => [
-        'host' => env('MEILISEARCH_HOST', 'http://127.0.0.1:7700'),
-        'key' => env('MEILISEARCH_KEY', null),
+    'typesense' => [
+        'client-settings' => [   // <-- BU OLMALI
+            'api_key' => env('TYPESENSE_API_KEY', 'xyz'),
+            'nodes' => [
+                [
+                    'host' => env('TYPESENSE_HOST', '127.0.0.1'),
+                    'port' => env('TYPESENSE_PORT', '8108'),
+                    'protocol' => env('TYPESENSE_PROTOCOL', 'http'),
+                ],
+            ],
+            'connection_timeout_seconds' => 2,
+        ],
+        'max_total_results' => 1000,
+        'collection-settings' => [
+            Product::class => [
+                'fields' => [
+                    ['name' => 'id', 'type' => 'int32'],
+                    ['name' => 'title', 'type' => 'string'],
+                    ['name' => 'description', 'type' => 'string'],
+                    ['name' => 'brand', 'type' => 'string', 'facet' => true],
+                    ['name' => 'stock', 'type' => 'int32'],
+                    ['name' => 'price', 'type' => 'float'],
+                ],
+                'default_sorting_field' => 'price',
+            ],
+        ],
     ],
+
+
 
 
 ];

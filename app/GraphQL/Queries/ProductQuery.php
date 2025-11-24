@@ -3,6 +3,8 @@
 namespace App\GraphQL\Queries;
 
 use App\Models\Product;
+use Chr15k\MeilisearchAdvancedQuery\MeilisearchQuery;
+use Laravel\Scout\Builder;
 
 class ProductQuery
 {
@@ -19,31 +21,18 @@ class ProductQuery
         $page = $args['page'] ?? 1;
         $perPage = $args['perPage'] ?? 20;
 
+        $filters = [];
+        if (!empty($minPrice)) $filters[] = "price:>={$minPrice}";
+        if (!empty($maxPrice)) $filters[] = "price:<={$maxPrice}";
+        if (!empty($brand)) $filters[] = "brand:={$brand}";
 
-        $builder = Product::search($query);
+        $builder = Product::search($query)->options([
+            'query_by' => 'title,description,brand',
+            'filter_by' => !empty($filters) ? implode(' && ', $filters) : null,
+            'per_page' => $perPage,
+            'page' => $page,
+        ]);
 
-        if ($brand) {
-            $builder->where('brand', $brand);
-        }
-
-        if ($minPrice !== null) {
-            $builder->where('price', '>=', 1);
-        }
-        /*
-        if ($minPrice !== null) {
-            $builder->where('price', '>=', $minPrice);
-        }
-
-        if ($maxPrice !== null) {
-            $builder->where('price', '<=', $maxPrice);
-        }
-
-        if ($inStock !== null) {
-            $builder->where('stock', $inStock ? 1 : 0); // Scout ile >0 çalışmayabilir, bu yüzden 1 veya 0
-        }
-        */
-
-        // Paginate ile sonuç
         $results = $builder->paginate($perPage, 'page', $page);
 
         return [

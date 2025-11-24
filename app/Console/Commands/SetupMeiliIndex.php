@@ -31,12 +31,14 @@ class SetupMeiliIndex extends Command
         }
 
         $client->index($indexName)->updateFilterableAttributes([
+            'name',
             'brand',
-            'price',
             'stock',
+            'price',
+            'in_stock',
         ]);
 
-        $this->info("Filterable attributes ayarlandı: brand, price, stock");
+        $this->info("Filterable attributes ayarlandı: brand, price, stock, price, in_stock ");
         $this->info("Meilisearch index setup tamamlandı ✅");
     }
 }
