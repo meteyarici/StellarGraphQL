@@ -119,6 +119,7 @@ type User {
   email: String!
   username: String
   is_active: Boolean!
+  addresses: [Address!]! @hasMany
 }
 
 """
@@ -139,6 +140,7 @@ type AddressPagination {
 type Address {
   id: ID!
   user_id: ID!
+  address: String!
   street: String!
   city: String!
   country: String!
@@ -190,5 +192,29 @@ extend type Query {
 
 extend type Query {
     product(id: ID!): Product @field(resolver: "App\\GraphQL\\Queries\\ProductQuery@detail")
+}
+
+
+
+extend type Mutation {
+    addAddress(
+        address: String!
+        city: String!
+        country: String!
+    ): Address
+    @field(resolver: "App\\GraphQL\\Mutations\\UserAddressMutations@addAddress")
+
+    updateAddress(
+        id: ID!
+        address: String
+        city: String
+        country: String
+    ): Address
+    @field(resolver: "App\\GraphQL\\Mutations\\UserAddressMutations@updateAddress")
+
+    deleteAddress(
+        id: ID!
+    ): Boolean
+    @field(resolver: "App\\GraphQL\\Mutations\\UserAddressMutations@deleteAddress")
 }
 

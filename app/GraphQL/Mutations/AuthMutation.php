@@ -51,6 +51,6 @@ class AuthMutation
 
     public function me($_, array $args){
 
-        return Auth::user();
+        return Auth::user()->load('addresses');
     }
 }

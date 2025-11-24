@@ -25,7 +25,10 @@ class ProductQuery
         if ($brand) {
             $builder->where('brand', $brand);
         }
-        //TODO:add extra filters
+
+        if ($minPrice !== null) {
+            $builder->where('price', '>=', 1);
+        }
         /*
         if ($minPrice !== null) {
             $builder->where('price', '>=', $minPrice);
