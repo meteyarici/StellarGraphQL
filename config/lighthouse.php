@@ -28,6 +28,7 @@ return [
          * make sure to return spec-compliant responses in case an error is thrown.
          */
         'middleware' => [
+
             // Ensures the request is not vulnerable to cross-site request forgery.
             // Nuwave\Lighthouse\Http\Middleware\EnsureXHR::class,
 
@@ -61,7 +62,7 @@ return [
     |
     */
 
-    'guards' => null,
+    'guards' => ['api'],
 
     /*
     |--------------------------------------------------------------------------
