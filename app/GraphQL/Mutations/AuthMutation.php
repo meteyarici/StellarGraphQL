@@ -16,8 +16,8 @@ class AuthMutation
 
         $response = Http::asForm()->post(config('app.url') . '/oauth/token', [
             'grant_type' => 'password',
-            'client_id' => '019ab268-6d8c-7247-a519-002708b173f9',
-            'client_secret' => 'G5UOqL4VjpvWOx0OdQ42gynxe2ANnLuUIEPz4yVa',
+            'client_id' => env('PASSPORT_PERSONAL_ACCESS_CLIENT_ID'),
+            'client_secret' => env('PASSPORT_PERSONAL_ACCESS_CLIENT_SECRET'),
             'username' => $email,
             'password' => $password,
             'scope' => '',
@@ -35,7 +35,6 @@ class AuthMutation
                 'expires_in' => null,
                 'user' => null
             ];
-
 
         }
 

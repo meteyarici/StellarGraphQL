@@ -89,4 +89,9 @@ class ProductQuery
             ],
         ];
     }
+
+
+    public function detail($_, array $args){
+        return Product::find($args['id']);
+    }
 }

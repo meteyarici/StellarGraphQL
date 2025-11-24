@@ -42,9 +42,22 @@ class UserQuery
     // Normal DB paginate
     public function list($_, array $args)
     {
+
         $page = $args['page'] ?? 1;
         $perPage = $args['perPage'] ?? 20;
 
-        return User::paginate($perPage, ['*'], 'page', $page);
+        $query = User::query();
+
+        return [
+            'data' => $query->paginate($perPage, ['*'], 'page', $page)->items(),
+            'paginatorInfo' => [
+                'count' => $query->count(),
+                'currentPage' => $page,
+                'lastPage' => ceil($query->count() / $perPage),
+                'perPage' => $perPage,
+                'total' => $query->count(),
+                'hasMorePages' => $page < ceil($query->count() / $perPage)
+            ]
+        ];
     }
 }

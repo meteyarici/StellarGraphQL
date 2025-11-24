@@ -163,7 +163,7 @@ type PurchaseResult {
 
 extend type Mutation {
     login(email: String!, password: String!): AuthPayload!
-    @field(resolver: "App\\GraphQL\\Mutations\\AuthMutation@login") @guard
+    @field(resolver: "App\\GraphQL\\Mutations\\AuthMutation@login")
 }
 
 type AuthPayload {
@@ -186,8 +186,9 @@ type UserProfile {
 
 extend type Query {
     me: User  @field(resolver: "App\\GraphQL\\Mutations\\AuthMutation@me") @guard
-
-
 }
 
+extend type Query {
+    product(id: ID!): Product @field(resolver: "App\\GraphQL\\Queries\\ProductQuery@detail")
+}
 
