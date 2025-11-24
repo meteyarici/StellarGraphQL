@@ -19,7 +19,7 @@ class ProductQuery
         $page = $args['page'] ?? 1;
         $perPage = $args['perPage'] ?? 20;
 
- 
+
         $builder = Product::search($query);
 
         if ($brand) {

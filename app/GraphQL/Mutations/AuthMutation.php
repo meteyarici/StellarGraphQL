@@ -3,6 +3,7 @@
 namespace App\GraphQL\Mutations;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -47,5 +48,10 @@ class AuthMutation
             'expires_in' => $tokens['expires_in'],
             'user' => User::where('email', $email)->first()
         ];
+    }
+
+    public function me($_, array $args){
+
+        return Auth::user();
     }
 }
