@@ -13,106 +13,101 @@ class PurchaseMutation extends BaseMutation
 {
     public function buy($root, array $args, $context)
     {
-
-        $idempotencyKey = $args['idempotencyKey'];
-        $redisKey = "idemp:buy:$idempotencyKey";
-
-        if ($this->redis->exists($redisKey)) {
-
-            return [
-                'success' => false,
-                'message' => 'Duplicate request detected',
-                'orderId' => null
-            ];
-        } else {
-
-            $this->redis->setex($redisKey, 60, 1);
-        }
-
-
-        return [
-            'success' => false,
-            'message' => 'next' . $idempotencyKey . ' '  ,
-            'orderId' => null,
-        ];
-        die('key yok');
-
-
-
         $user = $context->user();
+        $productId = $args['productId'];
+        $quantity = $args['quantity'] ?? 1;
+        $idempotencyKey = $args['idempotencyKey'];
+
+        $redis = Redis::connection();
+        $idempKey = "idemp:buy:$idempotencyKey";
 
 
-
-        // 2️⃣ Distributed Lock — eş zamanlı satın almaları engelle
-        $lock = $redis->set($lockKey, 1, 'NX', 'EX', 5);
-        if (!$lock) {
-            return [
-                'success' => false,
-                'message' => 'Product is currently being processed. Try again.',
-                'orderId' => null,
-            ];
+        if ($redis->exists($idempKey)) {
+            return json_decode($redis->get($idempKey), true);
         }
 
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
 
             $product = Product::lockForUpdate()->find($productId);
 
             if (!$product || !$product->is_active || $product->stock < $quantity) {
-                $response = [
+                return [
                     'success' => false,
                     'message' => 'Product not available in requested quantity',
                     'orderId' => null,
                 ];
-                $redis->setex($idempKey, 60, json_encode($response));
-                DB::rollBack();
-                return $response;
             }
 
-            // 3️⃣ Stok güncelle
-            $product->stock -= $quantity;
-            $product->save();
 
-            // 4️⃣ Siparişi oluştur
+            $softReserveKey = "soft_reserve:product:$productId";
+            $reservedQty = $redis->get($softReserveKey) ?? 0;
+
+            if ($reservedQty + $quantity > $product->stock) {
+                return [
+                    'success' => false,
+                    'message' => 'Not enough stock available (soft reservation)',
+                    'orderId' => null,
+                ];
+            }
+
+            $redis->incrby($softReserveKey, $quantity);
+            // reservation süresi (örn. 5 dakika)
+            $redis->expire($softReserveKey, 300);
+
+            // order oluştur (status: pending)
             $order = Order::create([
-                'user_id'          => $user->id,
-                'product_id'       => $product->id,
-                'quantity'         => $quantity,
-                'total_price'      => $product->price * $quantity,
-                'payment_method_id'=> $args['paymentMethodId'],
-                'status'           => 'paid',
+                'user_id'    => $user->id,
+                'uuid'    => $this->generateUniqueOrderUuid(),
+                'product_id' => $productId,
+                'quantity'   => $quantity,
+                'status'     => 'pending',
+                'address_id'     => 1,
+                'total_amount'     => 1,
             ]);
 
-            DB::commit();
+            // ödeme kuyruğuna ekle
+            $redis->xadd('payments_stream', '*', [
+                'order_id' => $order->id,
+                'user_id' => $user->id,
+                'product_id' => $productId,
+                'quantity' => $quantity,
+                'idempotency_key' => $idempotencyKey,
+            ]);
 
+            // Idempotency sonucu kaydet
             $response = [
                 'success' => true,
-                'message' => 'Purchase successful',
+                'message' => 'Order soft-reserved and queued for payment.',
                 'orderId' => $order->id,
             ];
 
-            // 5️⃣ Idempotency sonucunu kaydet (60 saniye)
             $redis->setex($idempKey, 60, json_encode($response));
+            DB::commit();
 
             return $response;
 
         } catch (\Exception $e) {
             DB::rollBack();
-
-            $response = [
+            return [
                 'success' => false,
                 'message' => $e->getMessage(),
                 'orderId' => null,
             ];
-
-            $redis->setex($idempKey, 60, json_encode($response));
-
-            return $response;
-
-        } finally {
-            // 6️⃣ Lock'u bırak
-            $redis->del($lockKey);
         }
+    }
+
+    /**
+     * @return string
+     */
+    protected function generateUniqueOrderUuid(): string
+    {
+        do {
+            $uuid = (string) \Illuminate\Support\Str::uuid();
+            $exists = \App\Models\Order::where('uuid', $uuid)->exists();
+        } while ($exists);
+
+        return $uuid;
     }
 
 }
